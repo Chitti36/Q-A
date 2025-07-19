@@ -52,4 +52,10 @@ chromadb
 openai
 pysqlite3-binary
 
+python-dotenv
+streamlit
+streamlit-oauth
+pysqlite3-binary  # this is the correct PyPI package for 3.11+
+
+
 
