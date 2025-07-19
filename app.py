@@ -1,3 +1,48 @@
+import streamlit as st
+from streamlit_oauth import OAuth2Component
+import requests
+
+# Get secrets
+client_id = st.secrets["GOOGLE_CLIENT_ID"]
+client_secret = st.secrets["GOOGLE_CLIENT_SECRET"]
+
+# Setup OAuth component
+oauth2 = OAuth2Component(
+    client_id=client_id,
+    client_secret=client_secret,
+    authorize_url="https://accounts.google.com/o/oauth2/v2/auth",
+    token_url="https://oauth2.googleapis.com/token",
+    redirect_uri="https://yourusername-yourappname.streamlit.app"
+)
+
+# OAuth params for Google
+params = {
+    "client_id": client_id,
+    "response_type": "code",
+    "redirect_uri": oauth2.redirect_uri,
+    "scope": "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile",
+    "access_type": "offline",
+    "prompt": "consent"
+}
+
+# Show login button
+token = oauth2.authorize_button("Login with Google", params=params, key="google")
+
+# Once logged in, get user info
+if token:
+    user_info = requests.get(
+        "https://www.googleapis.com/oauth2/v2/userinfo",
+        headers={"Authorization": f"Bearer {token['access_token']}"}
+    ).json()
+
+    st.success(f"Welcome, {user_info['name']} 👋")
+    st.image(user_info["picture"])
+    st.write("Email:", user_info["email"])
+
+    # ✅ Now your full app code continues here...
+else:
+    st.info("Please login to use this app.")
+    st.stop()
 import sys
 import pysqlite3
 sys.modules["sqlite3"] = pysqlite3
