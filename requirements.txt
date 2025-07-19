@@ -50,3 +50,4 @@ langchain-chroma
 langchain-huggingface
 chromadb
 openai
+pysqlite3-binary
