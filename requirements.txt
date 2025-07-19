@@ -1,46 +1,8 @@
-langchain-openai
-langchain
-python-dotenv
-langchain_community
-langchain_core
-streamlit
-langchain_groq
-langchain_ollama
-langchain-groq
-pypdf
-ipykernel
-bs4
-arxiv
-pymupdf
-wikipedia
-langchain-text-splitters
-chromadb
-sentence_transformers
-langchain_huggingface
-faiss-cpu
-langchain_chroma
-duckdb
-pandas
-openai
-duckduckgo-search
-mysql-connector-python
-SQLAlchemy
-validators==0.28.1
-youtube_transcript_api
-unstructured
-pytube
-numexpr
-arxiv
-wikipedia
-validators
-youtube-transcript-api
-unstructured
-moviepy
-yt-dlp
-whisper
-huggingface_hub
+# Core App
 streamlit
 python-dotenv
+
+# LangChain Core
 langchain
 langchain-openai
 langchain-groq
@@ -48,15 +10,43 @@ langchain-community
 langchain-core
 langchain-chroma
 langchain-huggingface
-chromadb
-openai
-pysqlite3-binary
+langchain-text-splitters
 
-python-dotenv
-streamlit
+# Embeddings & Vector Store
+sentence-transformers
+chromadb
+faiss-cpu
+
+# PDF & Data Handling
+pypdf
+pymupdf
+pandas
+duckdb
+moviepy
+
+# DB & ORM
+pysqlite3-binary
+mysql-connector-python
+SQLAlchemy
+
+# Search & Crawling
+bs4
+duckduckgo-search
+wikipedia
+arxiv
+validators==0.28.1
+
+# YouTube & Media
+youtube_transcript_api
+yt-dlp
+pytube
+whisper
+
+# OAuth
 streamlit-oauth==0.1.4
 
-pysqlite3-binary  # this is the correct PyPI package for 3.11+
+# Huggingface
+huggingface_hub
 
-
-
+# File parsing
+unstructured
