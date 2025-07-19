@@ -51,3 +51,4 @@ langchain-huggingface
 chromadb
 openai
 pysqlite3-binary
+streamlit-oauth
