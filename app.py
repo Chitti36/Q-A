@@ -11,7 +11,7 @@ client_secret = st.secrets["GOOGLE_CLIENT_SECRET"]
 oauth2 = OAuth2Component(
     client_id=client_id,
     client_secret=client_secret,
-    authorize_url="https://accounts.google.com/o/oauth2/v2/auth",
+    auth_url="https://accounts.google.com/o/oauth2/v2/auth",
     token_url="https://oauth2.googleapis.com/token",
     redirect_uri="https://asknget.streamlit.app/"
 )
