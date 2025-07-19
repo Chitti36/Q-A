@@ -54,7 +54,8 @@ pysqlite3-binary
 
 python-dotenv
 streamlit
-streamlit-oauth
+streamlit-oauth==0.1.4
+
 pysqlite3-binary  # this is the correct PyPI package for 3.11+
 
 
