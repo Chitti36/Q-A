@@ -22,12 +22,9 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_huggingface import HuggingFaceEmbeddings
 import langchain
 
-langchain.init(
-    api_key=os.getenv("LANGCHAIN_API_KEY"),
-    project=os.getenv("LANGCHAIN_PROJECT", "Q&A WITH DOCUMENT"),
-    tracing_v2=True
-)
-
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
+os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "Q&A WITH DOCUMENT")
 
 
 # Load .env for API keys
