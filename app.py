@@ -27,6 +27,10 @@ load_dotenv()
 os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN")
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
+os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "PDF-QnA")
+
 
 st.set_page_config(page_title="Q&A Assistant with PDF + Chat", layout="wide")
 st.title("🧠QnA Assistant")
