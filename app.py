@@ -20,6 +20,14 @@ from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.output_parsers import StrOutputParser
 from langchain_huggingface import HuggingFaceEmbeddings
+import langchain
+
+langchain.init(
+    api_key=os.getenv("LANGCHAIN_API_KEY"),
+    project=os.getenv("LANGCHAIN_PROJECT", "Q&A WITH DOCUMENT"),
+    tracing_v2=True
+)
+
 
 
 # Load .env for API keys
@@ -27,9 +35,7 @@ load_dotenv()
 os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN")
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-os.environ["LANGCHAIN_TRACING_V2"] = "true"
-os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
-os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "PDF-QnA")
+
 
 
 st.set_page_config(page_title="Q&A Assistant with PDF + Chat", layout="wide")
