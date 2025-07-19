@@ -1,50 +1,60 @@
 import streamlit as st
-st.set_page_config(page_title="Q&A Assistant with PDF + Chat", layout="wide")
-from streamlit_oauth import OAuth2Component
-import requests
+import streamlit_authenticator as stauth
+import yaml
+from yaml.loader import SafeLoader
 
-# Get secrets
-client_id = st.secrets["GOOGLE_CLIENT_ID"]
-client_secret = st.secrets["GOOGLE_CLIENT_SECRET"]
+# ---- USER CONFIGURATION ----
+names = ['Chitti Ruthik']
+usernames = ['ruthik']
+passwords = ['123']  # plaintext for example only; we’ll hash it below
 
-# Setup OAuth component
-oauth2 = OAuth2Component(
-    client_id=client_id,
-    client_secret=client_secret,
-    auth_url="https://accounts.google.com/o/oauth2/v2/auth",
-    token_url="https://oauth2.googleapis.com/token",
-    redirect_uri="https://asknget.streamlit.app/"
-)
+# ---- HASH PASSWORDS ----
+hashed_passwords = stauth.Hasher(passwords).generate()
 
-# OAuth params for Google
-params = {
-    "client_id": client_id,
-    "response_type": "code",
-    "redirect_uri": oauth2.redirect_uri,
-    "scope": "https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile",
-    "access_type": "offline",
-    "prompt": "consent"
+# ---- CONFIG YAML (you can move this to .yaml file too) ----
+config = {
+    'credentials': {
+        'usernames': {
+            usernames[0]: {
+                'name': names[0],
+                'password': hashed_passwords[0]
+            }
+        }
+    },
+    'cookie': {
+        'name': 'qa_login',
+        'key': 'secret_key_123',  # Change this to your own random key!
+        'expiry_days': 1
+    },
+    'preauthorized': {
+        'emails': []
+    }
 }
 
-# Show login button
-token = oauth2.authorize_button("Login with Google", params=params, key="google")
+# ---- AUTHENTICATION COMPONENT ----
+authenticator = stauth.Authenticate(
+    config['credentials'],
+    config['cookie']['name'],
+    config['cookie']['key'],
+    config['cookie']['expiry_days']
+)
 
-# Once logged in, get user info
-if token:
-    user_info = requests.get(
-        "https://www.googleapis.com/oauth2/v2/userinfo",
-        headers={"Authorization": f"Bearer {token['access_token']}"}
-    ).json()
+name, authentication_status, username = authenticator.login('Login', 'main')
 
-    st.sidebar.success(f"👋 Welcome, {user_info['name']}")
-    st.sidebar.image(user_info["picture"], width=60)
-    st.sidebar.caption(user_info["email"])
+if authentication_status:
+    authenticator.logout('Logout', 'sidebar')
+    st.success(f'Welcome {name} 👋')
+    
+    # ---- your Q&A app goes below ----
+    st.title("Ask Your PDF 📄💬")
 
+    # Your existing file upload and LangChain stuff goes here...
 
-    # ✅ Now your full app code continues here...
-else:
-    st.info("Please login to use this app.")
-    st.stop()
+elif authentication_status is False:
+    st.error('Username/password is incorrect 😥')
+elif authentication_status is None:
+    st.info('Please enter your username and password 👇')
+
 import sys
 import pysqlite3
 sys.modules["sqlite3"] = pysqlite3
