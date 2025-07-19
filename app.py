@@ -1,4 +1,5 @@
 import streamlit as st
+st.set_page_config(page_title="Q&A Assistant with PDF + Chat", layout="wide")
 from streamlit_oauth import OAuth2Component
 import requests
 
@@ -35,9 +36,10 @@ if token:
         headers={"Authorization": f"Bearer {token['access_token']}"}
     ).json()
 
-    st.success(f"Welcome, {user_info['name']} 👋")
-    st.image(user_info["picture"])
-    st.write("Email:", user_info["email"])
+    st.sidebar.success(f"👋 Welcome, {user_info['name']}")
+    st.sidebar.image(user_info["picture"], width=60)
+    st.sidebar.caption(user_info["email"])
+
 
     # ✅ Now your full app code continues here...
 else:
@@ -80,7 +82,7 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 
 
-st.set_page_config(page_title="Q&A Assistant with PDF + Chat", layout="wide")
+
 st.title("🧠QnA Assistant")
 
 # Sidebar model settings
