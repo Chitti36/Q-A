@@ -18,27 +18,35 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Streamlit secrets or .env
+from streamlit_oauth import OAuth2Component
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 client_id = os.getenv("GOOGLE_CLIENT_ID")
 client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
 
-# Initialize component (no manual endpoints!)
 oauth2 = OAuth2Component(
     client_id=client_id,
     client_secret=client_secret,
-    provider="google",         # <--- ✅ This is required
-    redirect_uri="http://localhost:8501",  # or your deployed domain
+    authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
+    token_endpoint="https://oauth2.googleapis.com/token",
+    redirect_uri="http://localhost:8501",  # or your Streamlit Cloud URL
+    scope=["openid", "email", "profile"]
 )
 
 # Show login button
-token = oauth2.authorize_button("🔐 Login with Google", "google")
+token = oauth2.authorize_button("🔐 Login with Google", "google_login")
 
 if token:
     user_info = oauth2.get_user_info(token)
-    user_email = user_info["email"]
+    user_email = user_info.get("email", "Unknown")
     st.sidebar.success(f"✅ Logged in as: {user_email}")
 else:
-    st.warning("🔒 Please log in to continue.")
+    st.warning("🔒 Please login with Google to continue.")
     st.stop()
+
 
 
 # LangChain imports
