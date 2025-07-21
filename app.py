@@ -22,10 +22,9 @@ oauth2 = OAuth2Component(
 
 # ✅ Pass scopes here:
 token = oauth2.authorize_button(
-    "🔐 Login with Google",
-    "google",
-    scope="email profile openid"   # Use 'scope', not 'scopes'
+    "🔐 Login with Google", "google", scope="email profile openid"
 )
+
 
 
 
