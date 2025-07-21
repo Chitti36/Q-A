@@ -11,28 +11,35 @@ import os
 from streamlit_oauth import OAuth2Component
 import os
 
+from streamlit_oauth import OAuth2Component
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Streamlit secrets or .env
+client_id = os.getenv("GOOGLE_CLIENT_ID")
+client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+
+# Initialize component (no manual endpoints!)
 oauth2 = OAuth2Component(
-    client_id=os.getenv("GOOGLE_CLIENT_ID"),
-    client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
-    authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
-    token_endpoint="https://oauth2.googleapis.com/token",
-    redirect_uri="http://localhost:8501",  # or your deployed URL
-    scope=["openid", "email", "profile"],
+    client_id=client_id,
+    client_secret=client_secret,
+    provider="google",         # <--- ✅ This is required
+    redirect_uri="http://localhost:8501",  # or your deployed domain
 )
 
-# Show Login Button
+# Show login button
 token = oauth2.authorize_button("🔐 Login with Google", "google")
 
-# If logged in, show email and allow access
 if token:
-    id_token = token.get("id_token")
-    userinfo = oauth2.get_id_token_claims(token)
-    user_email = userinfo["email"]
-
+    user_info = oauth2.get_user_info(token)
+    user_email = user_info["email"]
     st.sidebar.success(f"✅ Logged in as: {user_email}")
 else:
-    st.warning("🔒 Please log in with Google to access this app.")
+    st.warning("🔒 Please log in to continue.")
     st.stop()
+
 
 # LangChain imports
 from langchain_community.document_loaders import PyPDFLoader
