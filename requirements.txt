@@ -43,7 +43,8 @@ pytube
 whisper
 
 # OAuth
-streamlit-oauth==0.1.4
+streamlit-oauth>=0.1.15
+
 
 # Huggingface
 huggingface_hub
