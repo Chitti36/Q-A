@@ -6,7 +6,6 @@ langchain
 langchain-openai
 langchain-groq
 langchain-community
-langchain-core
 langchain-chroma
 langchain-huggingface
 langchain-text-splitters
@@ -25,8 +24,6 @@ moviepy
 
 # DB & ORM
 pysqlite3-binary
-mysql-connector-python
-SQLAlchemy
 
 # Search & Crawling
 beautifulsoup4
@@ -35,7 +32,7 @@ wikipedia
 arxiv
 validators==0.28.1
 
-# YouTube & Media
+# YouTube & Media (optional)
 youtube_transcript_api
 yt-dlp
 pytube
