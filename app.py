@@ -38,21 +38,7 @@ os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 
-# --- Google OAuth ---
 
-
-from streamlit_oauth import OAuth2Component
-
-oauth2 = OAuth2Component(
-    client_id=st.secrets["client_id"],
-    client_secret=st.secrets["client_secret"],
-    authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
-    token_endpoint="https://oauth2.googleapis.com/token",
-    redirect_uri="https://asknget.streamlit.app",  # your deployed app URL
-    scope=["https://www.googleapis.com/auth/userinfo.email", "https://www.googleapis.com/auth/userinfo.profile"]
-)
-
-token = oauth2.authorize_button("🔐 Sign in with Google", "google-login")
 
 
 
