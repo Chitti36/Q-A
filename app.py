@@ -17,11 +17,12 @@ oauth2 = OAuth2Component(
     client_id=os.getenv("GOOGLE_CLIENT_ID"),
     client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
     authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
-    token_endpoint="https://oauth2.googleapis.com/token",
-    scope="email profile openid"
+    token_endpoint="https://oauth2.googleapis.com/token"
 )
 
-token = oauth2.authorize_button("🔐 Login with Google", "google")
+# ✅ Pass scopes here:
+token = oauth2.authorize_button("🔐 Login with Google", "google", scopes=["email", "profile", "openid"])
+
 
 if token:
     user_info = oauth2.get_user_info(token)
