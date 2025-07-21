@@ -6,7 +6,6 @@ sys.modules["sqlite3"] = pysqlite3
 import sqlite3
 from datetime import datetime
 from streamlit_oauth import OAuth2Component
-from streamlit_oauth import OAuth2Component
 import os
 from dotenv import load_dotenv
 import streamlit as st
@@ -20,10 +19,12 @@ oauth2 = OAuth2Component(
     token_endpoint="https://oauth2.googleapis.com/token"
 )
 
-# ✅ Pass scopes here:
 token = oauth2.authorize_button(
-    "🔐 Login with Google", "google", scope="email profile openid"
+    "🔐 Login with Google",  # Label
+    "google",                # Key name
+    scope="email profile openid"  # ✅ CORRECT FORMAT
 )
+
 
 
 
