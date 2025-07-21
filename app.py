@@ -43,37 +43,6 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 
 
-if not token:
-    st.stop()
-
-user_info = oauth2.get_user_info("https://www.googleapis.com/oauth2/v1/userinfo", token)
-st.session_state.user = user_info
-st.success(f"✅ Welcome, {user_info['name']} ({user_info['email']})")
-# --- SQLite DB init ---
-conn = sqlite3.connect("users.db", check_same_thread=False)
-cursor = conn.cursor()
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS users (
-        email TEXT PRIMARY KEY,
-        name TEXT,
-        login_time TEXT
-    )
-''')
-conn.commit()
-
-# --- Save user info ---
-def save_user(user):
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cursor.execute(
-        "INSERT OR REPLACE INTO users (email, name, login_time) VALUES (?, ?, ?)",
-        (user["email"], user["name"], now)
-    )
-    conn.commit()
-
-save_user(user_info)
-
-
-
 st.title("🧠QnA Assistant")
 
 # Sidebar model settings
