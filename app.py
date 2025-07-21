@@ -5,20 +5,6 @@ sys.modules["sqlite3"] = pysqlite3
 import sqlite3
 from datetime import datetime
 from streamlit_oauth import OAuth2Component
-import streamlit as st
-from dotenv import load_dotenv
-import os
-from streamlit_oauth import OAuth2Component
-import os
-
-from streamlit_oauth import OAuth2Component
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
-
-# Streamlit secrets or .env
-from streamlit_oauth import OAuth2Component
 import os
 from dotenv import load_dotenv
 
@@ -27,8 +13,11 @@ load_dotenv()
 oauth2 = OAuth2Component(
     client_id=os.getenv("GOOGLE_CLIENT_ID"),
     client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
-    provider="google",  # ✅ now valid
-    redirect_uri="http://localhost:8501"
+    authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
+    token_endpoint="https://oauth2.googleapis.com/token",
+    revoke_endpoint="https://oauth2.googleapis.com/revoke",
+    redirect_uri="http://localhost:8501",
+    scope="email profile openid"
 )
 
 token = oauth2.authorize_button("🔐 Login with Google", "google")
@@ -38,6 +27,7 @@ if token:
 else:
     st.warning("🔐 Please log in with Google to continue.")
     st.stop()
+
 
 # LangChain imports
 from langchain_community.document_loaders import PyPDFLoader
