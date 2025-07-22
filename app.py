@@ -81,11 +81,13 @@ if uploaded_files and GROQ_API_KEY:
     splits = splitter.split_documents(documents)
 
     # Load SBERT manually to avoid meta tensor error
-    sbert_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+   )
+    from langchain_community.embeddings import HuggingFaceEmbeddings
+
     embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
-        model=sbert_model
+    model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
+
 
     # Vector DB
     vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
