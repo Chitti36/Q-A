@@ -25,7 +25,8 @@ from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.output_parsers import StrOutputParser
 
 # Avoid HuggingFace conflict: use alias
-from langchain.embeddings import HuggingFaceEmbeddings as LCHuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
 from sentence_transformers import SentenceTransformer
 
 # === Environment setup ===
