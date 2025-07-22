@@ -81,7 +81,7 @@ if uploaded_files and GROQ_API_KEY:
 
     # Load SBERT manually to avoid meta tensor error
     sbert_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-    embeddings = LCHuggingFaceEmbeddings(
+    embeddings = CHuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
         model=sbert_model
     )
