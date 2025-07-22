@@ -1,48 +1,21 @@
-streamlit
-python-dotenv
+# Base
+streamlit==1.47.0
+python-dotenv==1.0.1
 
-# LangChain Core
-langchain
-langchain-openai
-langchain-groq
-langchain-community
-langchain-chroma
-langchain-huggingface
-langchain-text-splitters
+# LangChain
+langchain==0.2.0
+langchain-community==0.2.0
+langchain-core==0.2.0
+langchain-openai==0.1.7
+langchain-groq==0.1.2
+langchain-huggingface==0.0.6
+langchain-chroma==0.1.4
 
-# Embeddings & Vector Store
-sentence-transformers
-chromadb
-faiss-cpu
+# Embeddings & DB
+sentence-transformers==2.7.0
+transformers==4.41.1
+torch==2.2.2
+pysqlite3-binary==0.5.2
 
-# PDF & Data Handling
-pypdf
-pymupdf
-pandas
-duckdb
-moviepy
-
-# DB & ORM
-pysqlite3-binary
-
-# Search & Crawling
-beautifulsoup4
-duckduckgo-search
-wikipedia
-arxiv
-validators==0.28.1
-
-# YouTube & Media (optional)
-youtube_transcript_api
-yt-dlp
-pytube
-whisper
-
-# OAuth
-streamlit-oauth==0.1.14
-
-# Huggingface
-huggingface_hub
-
-# File parsing
-unstructured
+# Optional if using FAISS instead of Chroma
+# faiss-cpu
