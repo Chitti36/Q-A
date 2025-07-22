@@ -81,7 +81,7 @@ if uploaded_files and GROQ_API_KEY:
     splits = splitter.split_documents(documents)
 
     # Load SBERT manually to avoid meta tensor error
-   )
+   
     from langchain_community.embeddings import HuggingFaceEmbeddings
 
     embeddings = HuggingFaceEmbeddings(
