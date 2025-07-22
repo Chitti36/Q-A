@@ -1,168 +1,93 @@
-import sys
-import pysqlite3
-sys.modules["sqlite3"] = pysqlite3
+import os
 import streamlit as st
 from dotenv import load_dotenv
-import os
-from datetime import datetime
-import sqlite3
-
-# LangChain imports
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
-from langchain_groq import ChatGroq
+from langchain_community.vectorstores import Chroma
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.chains import RetrievalQA
+from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain.chains import create_history_aware_retriever, create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_community.chat_message_histories import ChatMessageHistory
-from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.output_parsers import StrOutputParser
+from langchain_groq import ChatGroq
 
-# Load .env
+# Load environment variables
 load_dotenv()
-
-# API Keys
-os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN")
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
-os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "Q&A WITH DOCUMENT")
 
-# App Title
-st.title("🧠 QnA Assistant")
+# Set Streamlit page config
+st.set_page_config(page_title="Ask-n-Get 📄", layout="wide")
+st.title("Ask-n-Get 🤖📄")
 
-# Simulate logged-in user (you'll replace this with real login logic)
+# User session handling
 if "user_id" not in st.session_state:
-    st.session_state["user_id"] = "guest_" + datetime.now().strftime("%H%M%S")
+    st.session_state.user_id = os.urandom(4).hex()
 
-user_id = st.session_state["user_id"]
+if "message_history" not in st.session_state:
+    st.session_state.message_history = []
 
-# Sidebar Settings
-selected_llm = st.sidebar.selectbox("🤖 OpenAI Model", ["gpt-4o", "gpt-4-turbo", "gpt-4"])
-temperature = st.sidebar.slider("Temperature (OpenAI)", 0.0, 1.0, 0.7)
-max_tokens = st.sidebar.slider("Max Tokens (OpenAI)", 50, 500, 200)
+user_id = st.session_state.user_id
+message_history = st.session_state.message_history
 
-if st.sidebar.button("🧹 Clear OpenAI Chat History"):
-    st.session_state[f"{user_id}_openai_history"] = []
+uploaded_files = st.file_uploader("Upload PDF(s)", type=["pdf"], accept_multiple_files=True)
 
-# Upload Section
-uploaded_files = st.file_uploader("📄 Upload a PDF file", type=["pdf"], accept_multiple_files=True)
-user_input = st.text_input("💬 I'm idle, shoot me with some questions!")
+# Chat model config
+llm_groq = ChatGroq(temperature=0, groq_api_key=GROQ_API_KEY, model_name="gemma-7b-it")
+llm_openai = ChatOpenAI(temperature=0, openai_api_key=OPENAI_API_KEY)
 
-# Get session-specific message history
-if "store" not in st.session_state:
-    st.session_state.store = {}
+retriever = None
 
-def get_session_history(session_id) -> BaseChatMessageHistory:
-    if session_id not in st.session_state.store:
-        st.session_state.store[session_id] = ChatMessageHistory()
-    return st.session_state.store[session_id]
-
-# Option 1: Use Groq + PDF
-if uploaded_files and GROQ_API_KEY:
-    st.info("📚 Using PDF + Groq RAG mode...")
-
-    documents = []
-    for i, uploaded_file in enumerate(uploaded_files):
+if uploaded_files:
+    raw_text = ""
+    for i, pdf in enumerate(uploaded_files):
         temp_path = f"./temp_{user_id}_{i}.pdf"
         with open(temp_path, "wb") as f:
-            f.write(uploaded_file.getvalue())
+            f.write(pdf.read())
         loader = PyPDFLoader(temp_path)
-        docs = loader.load()
-        documents.extend(docs)
+        pages = loader.load_and_split()
+        for page in pages:
+            raw_text += page.page_content
+        os.remove(temp_path)
 
-    splitter = RecursiveCharacterTextSplitter(chunk_size=5000, chunk_overlap=500)
-    splits = splitter.split_documents(documents)
+    # Split and embed
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    splits = text_splitter.create_documents([raw_text])
 
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
-        model_kwargs={"device": "cpu"}
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    vectorstore = Chroma.from_documents(
+        documents=splits,
+        embedding=embeddings,
+        persist_directory=f"chroma_db_{user_id}"
     )
-
-    vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
+    vectorstore.persist()
     retriever = vectorstore.as_retriever()
 
-    llm = ChatGroq(groq_api_key=GROQ_API_KEY, model_name="llama3-8b-8192")
-
-    standalone_prompt = ChatPromptTemplate.from_messages([
-        ("system", "Given a chat history and a follow-up question, rewrite it as a standalone question."),
-        MessagesPlaceholder("chat_history"),
-        ("human", "{input}")
-    ])
-
-    qa_prompt = ChatPromptTemplate.from_messages([
-        ("system", "Use the retrieved context to answer the question. If unknown, say so.\n\n{context}"),
-        MessagesPlaceholder("chat_history"),
-        ("human", "{input}")
-    ])
-
-    history_aware_retriever = create_history_aware_retriever(llm, retriever, standalone_prompt)
-    qa_chain = create_stuff_documents_chain(llm, qa_prompt)
-    rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
-
-    conversation_chain = RunnableWithMessageHistory(
-        rag_chain,
-        get_session_history,
-        input_messages_key="input",
-        history_messages_key="chat_history",
-        output_messages_key="answer"
+    qa_chain = RetrievalQA.from_chain_type(
+        llm=llm_groq,
+        chain_type="stuff",
+        retriever=retriever,
+        return_source_documents=False
     )
 
-    session_id = user_id  # Session tied to user
+# Chat input
+user_input = st.chat_input("Ask me anything...")
 
-    if user_input:
-        session_history = get_session_history(session_id)
-        response = conversation_chain.invoke(
-            {"input": user_input},
-            config={"configurable": {"session_id": session_id}},
-        )
-        st.write("🤖 Assistant:", response['answer'])
+if user_input:
+    st.chat_message("user").write(user_input)
+    message_history.append(HumanMessage(content=user_input))
 
-        with st.expander("🕓 Chat History"):
-            for msg in session_history.messages:
-                role = "🧑‍💬 You" if msg.type == "human" else "🤖 Assistant"
-                st.markdown(f"**{role}:** {msg.content}")
+    if retriever:
+        response = qa_chain.run(user_input)
+    else:
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are a helpful assistant."),
+            *[(msg.role, msg.content) for msg in message_history],
+            ("human", "{question}")
+        ])
+        chain = prompt | llm_openai
+        response = chain.invoke({"question": user_input}).content
 
-# Option 2: Use OpenAI GPT for general QnA
-elif not uploaded_files and user_input:
-    st.info("💬 Using OpenAI GPT for general QnA...")
-
-    if f"{user_id}_openai_history" not in st.session_state:
-        st.session_state[f"{user_id}_openai_history"] = []
-
-    history_messages = st.session_state[f"{user_id}_openai_history"]
-
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are a helpful assistant. Answer in a kind, layman-friendly way."),
-        MessagesPlaceholder("chat_history"),
-        ("user", "{input}")
-    ])
-
-    llm = ChatOpenAI(model=selected_llm, temperature=temperature, max_tokens=max_tokens)
-    output_parser = StrOutputParser()
-    chain = prompt | llm | output_parser
-
-    inputs = {
-        "input": user_input,
-        "chat_history": history_messages
-    }
-
-    answer = chain.invoke(inputs)
-
-    history_messages.append({"role": "user", "content": user_input})
-    history_messages.append({"role": "assistant", "content": answer})
-
-    st.write("🤖 Assistant:", answer)
-
-    with st.expander("🕓 Chat History"):
-        for msg in history_messages:
-            role = "🧑‍💬 You" if msg["role"] == "user" else "🤖 Assistant"
-            st.markdown(f"**{role}:** {msg['content']}")
-
-# No valid input
-elif user_input:
-    st.warning("⚠️ Please upload a PDF (for Groq) or check your API keys in .env")
+    message_history.append(AIMessage(content=response))
+    st.chat_message("ai").write(response)
