@@ -8,33 +8,8 @@ from datetime import datetime
 from streamlit_oauth import OAuth2Component
 import os
 from dotenv import load_dotenv
-import streamlit as st
-
-load_dotenv()
-
-oauth2 = OAuth2Component(
-    client_id=os.getenv("GOOGLE_CLIENT_ID"),
-    client_secret=os.getenv("GOOGLE_CLIENT_SECRET"),
-    authorize_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
-    token_endpoint="https://oauth2.googleapis.com/token"
-)
-
-token = oauth2.authorize_button(
-    "🔐 Login with Google",  # Label
-    "google",                # Key name
-    scope="email profile openid"  # ✅ CORRECT FORMAT
-)
 
 
-
-
-
-if token:
-    user_info = oauth2.get_user_info(token)
-    st.sidebar.success(f"✅ Logged in as: {user_info['email']}")
-else:
-    st.warning("🔐 Please log in with Google to continue.")
-    st.stop()
 
 
 # LangChain imports
