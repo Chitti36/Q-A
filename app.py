@@ -1,16 +1,8 @@
 import streamlit as st
-
-import sys
-import pysqlite3
-sys.modules["sqlite3"] = pysqlite3
-import sqlite3
-from datetime import datetime
-from streamlit_oauth import OAuth2Component
-import os
 from dotenv import load_dotenv
-
-
-
+import os
+from datetime import datetime
+import sqlite3
 
 # LangChain imports
 from langchain_community.document_loaders import PyPDFLoader
@@ -26,43 +18,40 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.output_parsers import StrOutputParser
-from langchain_huggingface import HuggingFaceEmbeddings
-import langchain
 
-os.environ["LANGCHAIN_TRACING_V2"] = "true"
-os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
-os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "Q&A WITH DOCUMENT")
-
-
-# Load .env for API keys
+# Load .env
 load_dotenv()
+
+# API Keys
 os.environ["HF_TOKEN"] = os.getenv("HF_TOKEN")
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
+os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "Q&A WITH DOCUMENT")
 
+# App Title
+st.title("🧠 QnA Assistant")
 
+# Simulate logged-in user (you'll replace this with real login logic)
+if "user_id" not in st.session_state:
+    st.session_state["user_id"] = "guest_" + datetime.now().strftime("%H%M%S")
 
+user_id = st.session_state["user_id"]
 
-
-
-
-st.title("🧠QnA Assistant")
-
-# Sidebar model settings
+# Sidebar Settings
 selected_llm = st.sidebar.selectbox("🤖 OpenAI Model", ["gpt-4o", "gpt-4-turbo", "gpt-4"])
 temperature = st.sidebar.slider("Temperature (OpenAI)", 0.0, 1.0, 0.7)
 max_tokens = st.sidebar.slider("Max Tokens (OpenAI)", 50, 500, 200)
 
 if st.sidebar.button("🧹 Clear OpenAI Chat History"):
-    st.session_state["openai_history"] = []
+    st.session_state[f"{user_id}_openai_history"] = []
 
-# Upload PDF
-uploaded_files = st.file_uploader("📄 Upload a PDF file ", type=["pdf"], accept_multiple_files=True)
-user_input = st.text_input("💬I'm Idle,Shot me with some questions!")
+# Upload Section
+uploaded_files = st.file_uploader("📄 Upload a PDF file", type=["pdf"], accept_multiple_files=True)
+user_input = st.text_input("💬 I'm idle, shoot me with some questions!")
 
-# Store session history for Groq
-session_id = "default"
-if 'store' not in st.session_state:
+# Get session-specific message history
+if "store" not in st.session_state:
     st.session_state.store = {}
 
 def get_session_history(session_id) -> BaseChatMessageHistory:
@@ -70,23 +59,22 @@ def get_session_history(session_id) -> BaseChatMessageHistory:
         st.session_state.store[session_id] = ChatMessageHistory()
     return st.session_state.store[session_id]
 
-# 1. If PDF uploaded → Use Groq + RAG
+# Option 1: Use Groq + PDF
 if uploaded_files and GROQ_API_KEY:
-    st.write("Groq....")
+    st.info("📚 Using PDF + Groq RAG mode...")
 
-    # Load and process PDFs
     documents = []
-    for uploaded_file in uploaded_files:
-        temp_path = "./temp.pdf"
+    for i, uploaded_file in enumerate(uploaded_files):
+        temp_path = f"./temp_{user_id}_{i}.pdf"
         with open(temp_path, "wb") as f:
             f.write(uploaded_file.getvalue())
         loader = PyPDFLoader(temp_path)
         docs = loader.load()
         documents.extend(docs)
 
-    # Split and embed
     splitter = RecursiveCharacterTextSplitter(chunk_size=5000, chunk_overlap=500)
     splits = splitter.split_documents(documents)
+
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2",
         model_kwargs={"device": "cpu"}
@@ -95,10 +83,8 @@ if uploaded_files and GROQ_API_KEY:
     vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
     retriever = vectorstore.as_retriever()
 
-    # Groq LLM
     llm = ChatGroq(groq_api_key=GROQ_API_KEY, model_name="llama3-8b-8192")
 
-    # Prompt templates
     standalone_prompt = ChatPromptTemplate.from_messages([
         ("system", "Given a chat history and a follow-up question, rewrite it as a standalone question."),
         MessagesPlaceholder("chat_history"),
@@ -111,7 +97,6 @@ if uploaded_files and GROQ_API_KEY:
         ("human", "{input}")
     ])
 
-    # Create chain
     history_aware_retriever = create_history_aware_retriever(llm, retriever, standalone_prompt)
     qa_chain = create_stuff_documents_chain(llm, qa_prompt)
     rag_chain = create_retrieval_chain(history_aware_retriever, qa_chain)
@@ -124,6 +109,8 @@ if uploaded_files and GROQ_API_KEY:
         output_messages_key="answer"
     )
 
+    session_id = user_id  # Session tied to user
+
     if user_input:
         session_history = get_session_history(session_id)
         response = conversation_chain.invoke(
@@ -131,19 +118,21 @@ if uploaded_files and GROQ_API_KEY:
             config={"configurable": {"session_id": session_id}},
         )
         st.write("🤖 Assistant:", response['answer'])
+
         with st.expander("🕓 Chat History"):
             for msg in session_history.messages:
                 role = "🧑‍💬 You" if msg.type == "human" else "🤖 Assistant"
                 st.markdown(f"**{role}:** {msg.content}")
 
-# 2. If no PDF → Use OpenAI GPT for QnA with memory
+# Option 2: Use OpenAI GPT for general QnA
 elif not uploaded_files and user_input:
-    st.write("💡 Using OpenAI GPT for general QnA...")
+    st.info("💬 Using OpenAI GPT for general QnA...")
 
-    if "openai_history" not in st.session_state:
-        st.session_state["openai_history"] = []
+    if f"{user_id}_openai_history" not in st.session_state:
+        st.session_state[f"{user_id}_openai_history"] = []
 
-    # Prompt with memory
+    history_messages = st.session_state[f"{user_id}_openai_history"]
+
     prompt = ChatPromptTemplate.from_messages([
         ("system", "You are a helpful assistant. Answer in a kind, layman-friendly way."),
         MessagesPlaceholder("chat_history"),
@@ -154,7 +143,6 @@ elif not uploaded_files and user_input:
     output_parser = StrOutputParser()
     chain = prompt | llm | output_parser
 
-    history_messages = st.session_state["openai_history"]
     inputs = {
         "input": user_input,
         "chat_history": history_messages
@@ -166,11 +154,12 @@ elif not uploaded_files and user_input:
     history_messages.append({"role": "assistant", "content": answer})
 
     st.write("🤖 Assistant:", answer)
+
     with st.expander("🕓 Chat History"):
         for msg in history_messages:
             role = "🧑‍💬 You" if msg["role"] == "user" else "🤖 Assistant"
             st.markdown(f"**{role}:** {msg['content']}")
 
-# Else: Missing input
+# No valid input
 elif user_input:
-    st.warning("⚠️ Please upload a PDF (for Groq) or check if keys are properly set in .env")
+    st.warning("⚠️ Please upload a PDF (for Groq) or check your API keys in .env")
