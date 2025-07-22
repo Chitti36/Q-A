@@ -87,10 +87,18 @@ if uploaded_files and GROQ_API_KEY:
     # Split and embed
     splitter = RecursiveCharacterTextSplitter(chunk_size=5000, chunk_overlap=500)
     splits = splitter.split_documents(documents)
-    embeddings = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
-        model_kwargs={"device": "cpu"}
-    )
+   from sentence_transformers import SentenceTransformer
+from langchain.embeddings import HuggingFaceEmbeddings
+
+# Load the model manually (prevents meta tensor issues)
+sbert_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+
+# Wrap into LangChain-compatible object
+embeddings = HuggingFaceEmbeddings(
+    model_name="sentence-transformers/all-MiniLM-L6-v2",
+    model=sbert_model
+)
+
 
     vectorstore = Chroma.from_documents(documents=splits, embedding=embeddings)
     retriever = vectorstore.as_retriever()
