@@ -74,4 +74,5 @@ streamlit run app.py
 
 ## 👨‍💻 Author
 
-Developed by **Ruthik Chitti**
+Developed by **Ruthik Chitti** This is done in as chekc for the branch
+
